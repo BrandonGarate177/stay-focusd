@@ -3,4 +3,4 @@ node_modules
 dist
 build
 out
-
+src/renderer/config.ts

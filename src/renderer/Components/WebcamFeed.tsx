@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { config } from '../config';
 
 interface WebcamFeedProps {
   intervalSec?: number;
@@ -34,15 +35,17 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL,
   }, []);
 
   useEffect(() => {
-    console.log('WebcamFeed mounted. Endpoint:', import.meta.env.VITE_API_ENDPOINT);
+    // Check if endpoint is configured
+    if (!config.endpoint) {
+      console.error('API endpoint not configured. Please set VITE_ENDPOINT in your .env file.');
+      return;
+    }
+
     let intervalIdRef = { current: null as unknown as NodeJS.Timeout };
     const captureAndUpload = async () => {
-      if (!videoRef.current) {
-        console.log('videoRef.current is null');
-        return;
-      }
-      console.log('videoRef.current.readyState:', videoRef.current.readyState);
+      if (!videoRef.current) return;
       if (videoRef.current.readyState !== 4) return;
+
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
@@ -51,29 +54,34 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL,
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
       const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg'));
       if (!blob) return;
-      const formData = new FormData();
-      formData.append('file', blob, 'frame.jpg');
-      const endpoint = import.meta.env.VITE_API_ENDPOINT;
-      console.log('Attempting to POST to endpoint:', endpoint);
+
+      const endpoint = config.endpoint;
       try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          body: formData,
-        });
-        console.log('API response status:', res.status);
-        const data = await res.json();
-        console.log('API response data:', data);
-        if (data && data.ml_result) {
-          onResult({ status: data.ml_result.status, confidence: data.ml_result.confidence });
+        // Use Electron IPC bridge instead of fetch API to bypass CORS
+        if (window.electronAPI) {
+          // Pass blob and endpoint separately instead of FormData
+          const data = await window.electronAPI.uploadImage(blob, endpoint);
+          if (data && data.ml_result) {
+            onResult({ status: data.ml_result.status, confidence: data.ml_result.confidence });
+          }
         } else {
-          console.warn('API response missing ml_result:', data);
+          // Fallback to direct fetch if not in Electron environment (e.g. browser preview)
+          const formData = new FormData();
+          formData.append('image', blob, 'frame.jpg');
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await res.json();
+          if (data && data.ml_result) {
+            onResult({ status: data.ml_result.status, confidence: data.ml_result.confidence });
+          }
         }
       } catch (e) {
         console.error('API call failed:', e);
       }
     };
     intervalIdRef.current = setInterval(captureAndUpload, intervalSec * 1000);
-    console.log('Interval set for captureAndUpload every', intervalSec, 'seconds');
     return () => {
       if (intervalIdRef.current) clearInterval(intervalIdRef.current);
     };
@@ -86,41 +94,6 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL,
       videoRef.current.srcObject = null;
     }
   }, [showVideo]);
-
-  const handleManualCapture = async () => {
-    if (!videoRef.current || videoRef.current.readyState !== 4) {
-      console.log('Manual: videoRef.current not ready');
-      return;
-    }
-    const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg'));
-    if (!blob) return;
-    const formData = new FormData();
-    formData.append('file', blob, 'frame.jpg');
-    const endpoint = import.meta.env.VITE_API_ENDPOINT;
-    console.log('Manual: Attempting to POST to endpoint:', endpoint);
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        body: formData,
-      });
-      console.log('Manual: API response status:', res.status);
-      const data = await res.json();
-      console.log('Manual: API response data:', data);
-      if (data && data.ml_result) {
-        onResult({ status: data.ml_result.status, confidence: data.ml_result.confidence });
-      } else {
-        console.warn('Manual: API response missing ml_result:', data);
-      }
-    } catch (e) {
-      console.error('Manual: API call failed:', e);
-    }
-  };
 
   return (
     <>
@@ -165,11 +138,10 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL,
             fontFamily: 'Source Code Pro, monospace',
             textAlign: 'center',
             zIndex: 2,
-            border: '2px dashed #665DCD',
           }}
         >
           <div>
-            <div>Webcam is still active<br/>but hidden from view</div>
+            <div>Webcam is still active</div>
           </div>
         </div>
       )}
@@ -199,25 +171,6 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL,
           // Eye-off icon (closed)
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-5 0-9.27-3.11-11-7 1.21-2.61 3.16-4.77 5.66-6.11"/><path d="M1 1l22 22"/></svg>
         )}
-      </button>
-      <button
-        onClick={handleManualCapture}
-        style={{
-          position: 'absolute',
-          left: 251,
-          top: 220,
-          zIndex: 20,
-          background: '#665DCD',
-          color: 'white',
-          border: 'none',
-          borderRadius: 8,
-          padding: '4px 12px',
-          fontFamily: 'Source Code Pro, monospace',
-          fontSize: 14,
-          cursor: 'pointer',
-        }}
-      >
-        Test Endpoint
       </button>
     </>
   );

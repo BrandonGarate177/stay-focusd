@@ -1,5 +1,9 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
+const { URL } = require('url');
 
 const isDev = !app.isPackaged;
 
@@ -20,6 +24,127 @@ function createWindow() {
     win.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 }
+
+// Handle image upload from the renderer process
+ipcMain.handle('upload-image', async (event, { buffer, endpoint }) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const parsedUrl = new URL(endpoint);
+      const protocol = parsedUrl.protocol === 'https:' ? https : http;
+
+      // Write buffer to a temporary file
+      const tempFilePath = path.join(app.getPath('temp'), 'frame.jpg');
+      fs.writeFileSync(tempFilePath, Buffer.from(buffer));
+
+      console.log(`Saved temporary file to: ${tempFilePath}`);
+      console.log(`File size: ${fs.statSync(tempFilePath).size} bytes`);
+
+      // Read the file as a stream
+      const fileStream = fs.createReadStream(tempFilePath);
+
+      // Create a boundary for multipart/form-data
+      const boundary = '----WebKitFormBoundary' + Math.random().toString(16).substr(2);
+
+      // Build the multipart/form-data request
+      const boundaryStart = `--${boundary}\r\n`;
+      // Changed name from "file" to "image" to match backend expectations
+      const contentDisposition = 'Content-Disposition: form-data; name="image"; filename="frame.jpg"\r\n';
+      const contentType = 'Content-Type: image/jpeg\r\n\r\n';
+      const boundaryEnd = `\r\n--${boundary}--\r\n`;
+
+      // Get the file size for Content-Length calculation
+      const fileSize = fs.statSync(tempFilePath).size;
+      const headerSize = Buffer.byteLength(boundaryStart + contentDisposition + contentType);
+      const footerSize = Buffer.byteLength(boundaryEnd);
+      const contentLength = headerSize + fileSize + footerSize;
+
+      // Setup the request options
+      const options = {
+        hostname: parsedUrl.hostname,
+        port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+        path: parsedUrl.pathname + parsedUrl.search,
+        method: 'POST',
+        headers: {
+          'Content-Type': `multipart/form-data; boundary=${boundary}`,
+          'Content-Length': contentLength
+        }
+      };
+
+      console.log(`Making request to ${endpoint}`);
+      console.log(`Headers: ${JSON.stringify(options.headers)}`);
+
+      const req = protocol.request(options, (res) => {
+        let data = '';
+
+        console.log(`Response status: ${res.statusCode}`);
+        console.log(`Response headers: ${JSON.stringify(res.headers)}`);
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          console.log(`Response data: ${data}`);
+
+          // Clean up the temp file
+          fs.unlink(tempFilePath, (err) => {
+            if (err) console.error('Error deleting temp file:', err);
+          });
+
+          try {
+            const jsonResponse = JSON.parse(data);
+            resolve(jsonResponse);
+          } catch (error) {
+            console.error('Failed to parse response:', error);
+            reject({ error: 'Failed to parse response', details: error.message, rawResponse: data });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('Request error:', error);
+
+        // Clean up the temp file on error
+        fs.unlink(tempFilePath, (err) => {
+          if (err) console.error('Error deleting temp file on request error:', err);
+        });
+
+        reject({ error: 'Request failed', details: error.message });
+      });
+
+      // Write the multipart form header
+      req.write(boundaryStart);
+      req.write(contentDisposition);
+      req.write(contentType);
+
+      // Stream the file data
+      fileStream.on('data', (chunk) => {
+        req.write(chunk);
+      });
+
+      fileStream.on('end', () => {
+        // Write the closing boundary and end the request
+        req.write(boundaryEnd);
+        req.end();
+      });
+
+      fileStream.on('error', (err) => {
+        console.error('Error reading file stream:', err);
+        req.destroy();
+        reject({ error: 'File stream error', details: err.message });
+
+        // Clean up the temp file on stream error
+        fs.unlink(tempFilePath, (unlinkErr) => {
+          if (unlinkErr) console.error('Error deleting temp file on stream error:', unlinkErr);
+        });
+      });
+
+    } catch (error) {
+      console.error('Exception in upload-image handler:', error);
+      reject({ error: 'Failed to send request', details: error.message });
+    }
+  });
+});
 
 app.whenReady().then(createWindow);
 
