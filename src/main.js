@@ -4,8 +4,12 @@ const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const { URL } = require('url');
+// Import StorageService from JavaScript file (will be created next)
+const { StorageService } = require('./main/storage/StorageService.js');
 
 const isDev = !app.isPackaged;
+// Initialize storage service
+let storageService;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -146,7 +150,74 @@ ipcMain.handle('upload-image', async (event, { buffer, endpoint }) => {
   });
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  // Initialize storage service
+  storageService = new StorageService();
+  console.log('Storage service initialized');
+
+  // Set up IPC handlers for storage operations
+  setupStorageIpcHandlers();
+
+  createWindow();
+});
+
+// Set up IPC handlers for storage operations
+function setupStorageIpcHandlers() {
+  // Start a new focus tracking session
+  ipcMain.handle('start-session', async (event, sessionConfig) => {
+    try {
+      const session = storageService.startSession(sessionConfig);
+      return { success: true, session };
+    } catch (error) {
+      console.error('Failed to start session:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Add a log entry to current session
+  ipcMain.handle('add-log-entry', async (event, { sessionId, entry }) => {
+    try {
+      const success = storageService.addLogEntry(sessionId, entry);
+      return { success };
+    } catch (error) {
+      console.error('Failed to add log entry:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // End a session
+  ipcMain.handle('end-session', async (event, sessionId) => {
+    try {
+      const success = storageService.endSession(sessionId);
+      return { success };
+    } catch (error) {
+      console.error('Failed to end session:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Search sessions
+  ipcMain.handle('search-sessions', async (event, searchParams) => {
+    try {
+      const results = storageService.search(searchParams);
+      return { success: true, results };
+    } catch (error) {
+      console.error('Search failed:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Get storage stats
+  ipcMain.handle('get-storage-stats', async () => {
+    try {
+      const stats = storageService.getStats();
+      return { success: true, stats };
+    } catch (error) {
+      console.error('Failed to get storage stats:', error);
+      return { success: false, error: error.message };
+    }
+  });
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

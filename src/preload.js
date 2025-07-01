@@ -13,6 +13,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
       buffer: arrayBuffer,
       endpoint: endpoint
     });
+  },
+
+  // Storage API methods
+  startSession: async (sessionConfig) => {
+    return ipcRenderer.invoke('start-session', sessionConfig);
+  },
+
+  addLogEntry: async (sessionId, entry) => {
+    return ipcRenderer.invoke('add-log-entry', { sessionId, entry });
+  },
+
+  endSession: async (sessionId) => {
+    return ipcRenderer.invoke('end-session', sessionId);
+  },
+
+  searchSessions: async (searchParams) => {
+    return ipcRenderer.invoke('search-sessions', searchParams);
+  },
+
+  getStorageStats: async () => {
+    return ipcRenderer.invoke('get-storage-stats');
   }
 });
 

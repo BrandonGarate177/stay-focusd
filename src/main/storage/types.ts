@@ -1,71 +1,11 @@
 /**
- * TypeScript declarations for Electron API exposed through preload.js
- */
-
-interface ElectronAPI {
-  /**
-   * Upload an image to a specified endpoint
-   */
-  uploadImage: (blob: Blob, endpoint: string) => Promise<any>;
-
-  /**
-   * Start a new focus tracking session
-   */
-  startSession: (sessionConfig: SessionConfig) => Promise<{
-    success: boolean;
-    session?: Session;
-    error?: string;
-  }>;
-
-  /**
-   * Add a log entry to an existing session
-   */
-  addLogEntry: (sessionId: string, entry: AttentionLogEntry) => Promise<{
-    success: boolean;
-    error?: string;
-  }>;
-
-  /**
-   * End a session
-   */
-  endSession: (sessionId: string) => Promise<{
-    success: boolean;
-    error?: string;
-  }>;
-
-  /**
-   * Search for entries in stored sessions
-   */
-  searchSessions: (searchParams: SearchParams) => Promise<{
-    success: boolean;
-    results?: SearchResults;
-    error?: string;
-  }>;
-
-  /**
-   * Get storage statistics
-   */
-  getStorageStats: () => Promise<{
-    success: boolean;
-    stats?: {
-      sessionCount: number;
-      totalLogEntries: number;
-      oldestSession?: string;
-      newestSession?: string;
-      diskUsage: number;
-    };
-    error?: string;
-  }>;
-}
-
-/**
- * Type definitions for storage data model
+ * Type definitions for the local storage system
  */
 
 /**
  * Represents a single attention log entry
  */
-interface AttentionLogEntry {
+export interface AttentionLogEntry {
   timestamp: number;        // Unix timestamp (milliseconds)
   status: string;           // "attentive", "distracted", etc.
   confidence: number;       // 0-1 confidence value
@@ -75,7 +15,7 @@ interface AttentionLogEntry {
 /**
  * Session configuration parameters
  */
-interface SessionConfig {
+export interface SessionConfig {
   duration?: number;        // Session duration in minutes
   breakInterval?: number;   // Break interval in minutes
   goal?: string;            // Session goal/description
@@ -85,7 +25,7 @@ interface SessionConfig {
 /**
  * Represents a full session
  */
-interface Session {
+export interface Session {
   id: string;               // Unique session ID (usually derived from timestamp)
   startTime: number;        // Unix timestamp when session started
   endTime?: number;         // Unix timestamp when session ended (optional if ongoing)
@@ -94,9 +34,20 @@ interface Session {
 }
 
 /**
+ * Global metadata stored separately
+ */
+export interface StorageMetadata {
+  lastSessionId?: string;   // ID of the most recent session
+  sessionCount: number;     // Total number of sessions stored
+  totalLogEntries: number;  // Total log entries across all sessions
+  oldestSession?: string;   // ID of the oldest session still stored
+  version: string;          // Schema version for future-proofing
+}
+
+/**
  * Search query parameters
  */
-interface SearchParams {
+export interface SearchParams {
   timeRange?: {
     start: number;          // Start timestamp
     end: number;            // End timestamp
@@ -113,17 +64,10 @@ interface SearchParams {
 /**
  * Search results
  */
-interface SearchResults {
+export interface SearchResults {
   entries: Array<{
     sessionId: string;      // ID of the session containing the match
     entry: AttentionLogEntry; // The matching log entry
   }>;
   total: number;            // Total matches found
-}
-
-/**
- * Declare electronAPI on window
- */
-declare interface Window {
-  electronAPI: ElectronAPI;
 }
