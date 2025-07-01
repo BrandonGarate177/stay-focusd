@@ -65,7 +65,7 @@ npm run build
 
 - All image processing is done securely.
 - You can toggle the webcam feed visibility at any time.
-- Images are not stored permanently.
+- Images are not stored permanently. They're deleted when Model is done.
 - The application requires webcam permissions to function.
 
 ## Requirements
