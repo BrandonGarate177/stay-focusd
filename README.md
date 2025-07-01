@@ -10,7 +10,7 @@ An intelligent productivity application that uses computer vision to monitor use
 
 ## Overview
 
-Stay FocuSD is a desktop application that uses your webcam to analyze your attention status in real-time. The application employs computer vision and machine learning algorithms to determine if you're focused ("LOCKED IN") or distracted ("SLUMPED"), providing visual feedback to help you maintain productivity.
+Stay FocuSD is a desktop application that uses your webcam to analyze your attention status in real-time. The application employs computer vision and machine learning algorithms to determine if you are focused ("LOCKED IN") or distracted ("SLUMPED"), providing visual feedback to help you maintain productivity.
 
 ## Key Features
 
