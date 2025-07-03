@@ -1,15 +1,22 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const { URL } = require('url');
-// Import StorageService from JavaScript file (will be created next)
+// Import StorageService from JavaScript file
 const { StorageService } = require('./main/storage/StorageService.js');
 
 const isDev = !app.isPackaged;
 // Initialize storage service
 let storageService;
+// Store user preferences
+let userPreferences = {
+  storagePath: null
+};
+
+// Path to user preferences file
+const userPrefsPath = path.join(app.getPath('userData'), 'preferences.json');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -150,10 +157,39 @@ ipcMain.handle('upload-image', async (event, { buffer, endpoint }) => {
   });
 });
 
+// Load user preferences from file
+function loadUserPreferences() {
+  try {
+    if (fs.existsSync(userPrefsPath)) {
+      const data = fs.readFileSync(userPrefsPath);
+      userPreferences = JSON.parse(data);
+      console.log('User preferences loaded:', userPreferences);
+    } else {
+      console.log('No user preferences file found, using defaults');
+    }
+  } catch (error) {
+    console.error('Error loading user preferences:', error);
+  }
+}
+
+// Save user preferences to file
+function saveUserPreferences() {
+  try {
+    fs.writeFileSync(userPrefsPath, JSON.stringify(userPreferences, null, 2));
+    console.log('User preferences saved:', userPreferences);
+  } catch (error) {
+    console.error('Error saving user preferences:', error);
+  }
+}
+
 app.whenReady().then(() => {
-  // Initialize storage service
-  storageService = new StorageService();
-  console.log('Storage service initialized');
+  // First load user preferences
+  loadUserPreferences();
+
+  // Initialize storage service with user-selected path if available
+  storageService = new StorageService(userPreferences.storagePath);
+  console.log('Storage service initialized' + (userPreferences.storagePath ?
+    ` with custom path: ${userPreferences.storagePath}` : ' with default path'));
 
   // Set up IPC handlers for storage operations
   setupStorageIpcHandlers();
@@ -163,6 +199,47 @@ app.whenReady().then(() => {
 
 // Set up IPC handlers for storage operations
 function setupStorageIpcHandlers() {
+  // Handle storage path selection
+  ipcMain.handle('select-storage-path', async (event) => {
+    const result = await dialog.showOpenDialog({
+      title: 'Select Storage Location',
+      properties: ['openDirectory']
+    });
+
+    if (result.canceled) {
+      return { success: false, error: 'No directory selected' };
+    } else {
+      const selectedPath = result.filePaths[0];
+      userPreferences.storagePath = selectedPath;
+      saveUserPreferences();
+
+      // Re-initialize storage service with the new path
+      storageService = new StorageService(selectedPath);
+      console.log(`Storage service re-initialized with path: ${selectedPath}`);
+
+      return { success: true, storagePath: selectedPath };
+    }
+  });
+
+  // Set maximum number of sessions to keep
+  ipcMain.handle('set-max-sessions', async (event, maxSessions) => {
+    try {
+      storageService.setMaxSessions(maxSessions);
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to set max sessions:', error);
+      return { success: false, error: error.message };
+    }
+  });
+  // Get current storage path
+  ipcMain.handle('get-storage-path', () => {
+    return {
+      success: true,
+      storagePath: userPreferences.storagePath || 'Default location',
+      isDefault: !userPreferences.storagePath
+    };
+  });
+
   // Start a new focus tracking session
   ipcMain.handle('start-session', async (event, sessionConfig) => {
     try {

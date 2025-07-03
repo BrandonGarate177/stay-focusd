@@ -34,6 +34,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   getStorageStats: async () => {
     return ipcRenderer.invoke('get-storage-stats');
+  },
+
+  // Set the maximum number of sessions to keep
+  setMaxSessions: async (maxSessions) => {
+    return ipcRenderer.invoke('set-max-sessions', maxSessions);
+  },
+
+  // Storage location selection methods
+  selectStoragePath: async () => {
+    return ipcRenderer.invoke('select-storage-path');
+  },
+
+  getStoragePath: async () => {
+    return ipcRenderer.invoke('get-storage-path');
   }
 });
 

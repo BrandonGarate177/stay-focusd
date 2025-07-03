@@ -56,6 +56,29 @@ interface ElectronAPI {
     };
     error?: string;
   }>;
+
+  /**
+   * Open a folder selection dialog for the user to choose where to store data
+   */
+  selectStoragePath: () => Promise<{
+    success: boolean;
+    storagePath?: string;
+    error?: string;
+  }>;
+
+  /**
+   * Get the current storage path
+   */
+  getStoragePath: () => Promise<{
+    success: boolean;
+    storagePath: string;
+    isDefault: boolean;
+  }>;
+
+  /**
+   * Set the maximum number of sessions to keep
+   */
+  setMaxSessions: (maxSessions: number) => Promise<{ success: boolean; error?: string }>;
 }
 
 /**
