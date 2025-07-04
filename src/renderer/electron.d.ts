@@ -4,6 +4,11 @@
 
 interface ElectronAPI {
   /**
+   * Analyze a focus session based on locally stored logs
+   */
+  analyzeSession: () => Promise<any>;
+
+  /**
    * Upload an image to a specified endpoint
    */
   uploadImage: (blob: Blob, endpoint: string) => Promise<any>;

@@ -48,6 +48,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   getStoragePath: async () => {
     return ipcRenderer.invoke('get-storage-path');
+  },
+
+  // Analyze the latest session via main process
+  analyzeSession: async () => {
+    return ipcRenderer.invoke('analyze-session');
   }
 });
 

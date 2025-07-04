@@ -157,6 +157,48 @@ ipcMain.handle('upload-image', async (event, { buffer, endpoint }) => {
   });
 });
 
+// Analyze session and post to remote endpoint
+ipcMain.handle('analyze-session', async () => {
+  try {
+    const sessionId = storageService.metadata.lastSessionId;
+    const session = storageService.getSession(sessionId);
+    if (!session) throw new Error(`Session ${sessionId} not found`);
+    const endpoint = 'https://focusd-lamp-126402297095.us-west1.run.app/analyze';
+    const parsedUrl = new URL(endpoint);
+    const dataString = JSON.stringify(session);
+    const protocol = parsedUrl.protocol === 'https:' ? https : http;
+    const options = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(dataString)
+      }
+    };
+    return new Promise((resolve, reject) => {
+      const req = protocol.request(options, res => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(body));
+          } catch (e) {
+            reject(e);
+          }
+        });
+      });
+      req.on('error', reject);
+      req.write(dataString);
+      req.end();
+    });
+  } catch (error) {
+    console.error('analyze-session error:', error);
+    throw error;
+  }
+});
+
 // Load user preferences from file
 function loadUserPreferences() {
   try {

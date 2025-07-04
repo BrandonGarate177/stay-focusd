@@ -381,7 +381,7 @@ body {
 
 /* StorageSettings styles - even more compact */
 .storage-settings-container {
-  background-color: rgba(255, 255, 255, 0.06);
+  background: linear-gradient(135deg, rgba(102, 93, 205, 0.15) 0%, rgba(95, 164, 230, 0.15) 77%), #141619;
   border-radius: 12px;
   padding: 0.8rem;
   margin: 0.6rem 0;

@@ -49,9 +49,9 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({
     // Only set up interval if isActive is true
     if (!isActive) return;
 
-    // Check if endpoint is configured
-    if (!config.endpoint) {
-      console.error('API endpoint not configured. Please set VITE_ENDPOINT in your .env file.');
+    // Check if upload endpoint is configured
+    if (!config.uploadEndpoint) {
+      console.error('Upload endpoint not configured. Please set VITE_UPLOAD_ENDPOINT in your .env file.');
       return;
     }
 
@@ -69,30 +69,31 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({
       const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg'));
       if (!blob) return;
 
-      const endpoint = config.endpoint;
+      const endpoint = config.uploadEndpoint;
+      console.log(`[WebcamFeed] preparing to upload image to ${endpoint}, isActive=${isActive}`);
       try {
         // Use Electron IPC bridge instead of fetch API to bypass CORS
+        let data;
         if (window.electronAPI) {
-          // Pass blob and endpoint separately instead of FormData
-          const data = await window.electronAPI.uploadImage(blob, endpoint);
-          if (data && data.ml_result) {
-            onResult({ status: data.ml_result.status, confidence: data.ml_result.confidence });
-          }
+          console.log('[WebcamFeed] using Electron IPC for upload');
+          data = await window.electronAPI.uploadImage(blob, endpoint);
+          console.log('[WebcamFeed] IPC upload result:', data);
         } else {
-          // Fallback to direct fetch if not in Electron environment (e.g. browser preview)
+          console.log('[WebcamFeed] using fetch API for upload');
           const formData = new FormData();
           formData.append('image', blob, 'frame.jpg');
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            body: formData,
-          });
-          const data = await res.json();
-          if (data && data.ml_result) {
-            onResult({ status: data.ml_result.status, confidence: data.ml_result.confidence });
-          }
+          const res = await fetch(endpoint, { method: 'POST', body: formData });
+          console.log('[WebcamFeed] fetch upload response:', res.status, res.statusText);
+          data = await res.json();
+          console.log('[WebcamFeed] fetch upload data:', data);
+        }
+        if (data && data.ml_result) {
+          onResult({ status: data.ml_result.status, confidence: data.ml_result.confidence });
+        } else {
+          console.warn('[WebcamFeed] no ml_result in response data');
         }
       } catch (e) {
-        console.error('API call failed:', e);
+        console.error('[WebcamFeed] API call failed:', e);
       }
     };
 
@@ -131,7 +132,7 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({
             top: 23,
             background: 'rgba(217,217,217,0.5)',
             transform: 'scaleX(-1)',
-            opacity: 0.7,
+            opacity: 0.9,
             transition: 'opacity 0.3s',
           }}
           data-opacity
