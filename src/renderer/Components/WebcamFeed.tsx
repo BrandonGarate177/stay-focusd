@@ -4,11 +4,22 @@ import { config } from '../config';
 interface WebcamFeedProps {
   intervalSec?: number;
   onResult: (result: { status: string; confidence: number }) => void;
+  isActive?: boolean; // Add isActive prop to control API calls
+  width?: number;  // optional width in pixels
+  height?: number; // optional height in pixels
 }
 
 const DEFAULT_INTERVAL = 5;
+const DEFAULT_WIDTH = 297;
+const DEFAULT_HEIGHT = 191;
 
-const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL, onResult }) => {
+const WebcamFeed: React.FC<WebcamFeedProps> = ({
+  intervalSec = DEFAULT_INTERVAL,
+  onResult,
+  isActive = false, // Default to false, meaning no API calls
+  width = DEFAULT_WIDTH,
+  height = DEFAULT_HEIGHT
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [showVideo, setShowVideo] = useState(true);
@@ -35,9 +46,12 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL,
   }, []);
 
   useEffect(() => {
-    // Check if endpoint is configured
-    if (!config.endpoint) {
-      console.error('API endpoint not configured. Please set VITE_ENDPOINT in your .env file.');
+    // Only set up interval if isActive is true
+    if (!isActive) return;
+
+    // Check if upload endpoint is configured
+    if (!config.uploadEndpoint) {
+      console.error('Upload endpoint not configured. Please set VITE_UPLOAD_ENDPOINT in your .env file.');
       return;
     }
 
@@ -55,37 +69,41 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL,
       const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg'));
       if (!blob) return;
 
-      const endpoint = config.endpoint;
+      const endpoint = config.uploadEndpoint;
+      console.log(`[WebcamFeed] preparing to upload image to ${endpoint}, isActive=${isActive}`);
       try {
         // Use Electron IPC bridge instead of fetch API to bypass CORS
+        let data;
         if (window.electronAPI) {
-          // Pass blob and endpoint separately instead of FormData
-          const data = await window.electronAPI.uploadImage(blob, endpoint);
-          if (data && data.ml_result) {
-            onResult({ status: data.ml_result.status, confidence: data.ml_result.confidence });
-          }
+          console.log('[WebcamFeed] using Electron IPC for upload');
+          data = await window.electronAPI.uploadImage(blob, endpoint);
+          console.log('[WebcamFeed] IPC upload result:', data);
         } else {
-          // Fallback to direct fetch if not in Electron environment (e.g. browser preview)
+          console.log('[WebcamFeed] using fetch API for upload');
           const formData = new FormData();
           formData.append('image', blob, 'frame.jpg');
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            body: formData,
-          });
-          const data = await res.json();
-          if (data && data.ml_result) {
-            onResult({ status: data.ml_result.status, confidence: data.ml_result.confidence });
-          }
+          const res = await fetch(endpoint, { method: 'POST', body: formData });
+          console.log('[WebcamFeed] fetch upload response:', res.status, res.statusText);
+          data = await res.json();
+          console.log('[WebcamFeed] fetch upload data:', data);
+        }
+        if (data && data.ml_result) {
+          onResult({ status: data.ml_result.status, confidence: data.ml_result.confidence });
+        } else {
+          console.warn('[WebcamFeed] no ml_result in response data');
         }
       } catch (e) {
-        console.error('API call failed:', e);
+        console.error('[WebcamFeed] API call failed:', e);
       }
     };
+
+    // Only start interval if isActive is true
     intervalIdRef.current = setInterval(captureAndUpload, intervalSec * 1000);
+
     return () => {
       if (intervalIdRef.current) clearInterval(intervalIdRef.current);
     };
-  }, [intervalSec, onResult]);
+  }, [intervalSec, onResult, isActive]); // Add isActive to dependency array
 
   useEffect(() => {
     if (showVideo && videoRef.current && streamRef.current) {
@@ -105,8 +123,8 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL,
           muted
           className="main-card webcam-feed"
           style={{
-            width: 297,
-            height: 191,
+            width,
+            height,
             borderRadius: 39,
             objectFit: 'cover',
             position: 'absolute',
@@ -114,7 +132,7 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL,
             top: 23,
             background: 'rgba(217,217,217,0.5)',
             transform: 'scaleX(-1)',
-            opacity: 0.7,
+            opacity: 0.9,
             transition: 'opacity 0.3s',
           }}
           data-opacity
@@ -123,8 +141,8 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL,
         <div
           className="main-card webcam-feed-off"
           style={{
-            width: 297,
-            height: 191,
+            width,
+            height,
             borderRadius: 39,
             position: 'absolute',
             left: 251,
@@ -149,7 +167,7 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ intervalSec = DEFAULT_INTERVAL,
         onClick={() => setShowVideo((v) => !v)}
         style={{
           position: 'absolute',
-          left: 251 + 297 - 36,
+          left: 251 + width - 36,
           top: 23 + 12,
           width: 24,
           height: 24,

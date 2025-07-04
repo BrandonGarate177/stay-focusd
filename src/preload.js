@@ -13,6 +13,46 @@ contextBridge.exposeInMainWorld('electronAPI', {
       buffer: arrayBuffer,
       endpoint: endpoint
     });
+  },
+
+  // Storage API methods
+  startSession: async (sessionConfig) => {
+    return ipcRenderer.invoke('start-session', sessionConfig);
+  },
+
+  addLogEntry: async (sessionId, entry) => {
+    return ipcRenderer.invoke('add-log-entry', { sessionId, entry });
+  },
+
+  endSession: async (sessionId) => {
+    return ipcRenderer.invoke('end-session', sessionId);
+  },
+
+  searchSessions: async (searchParams) => {
+    return ipcRenderer.invoke('search-sessions', searchParams);
+  },
+
+  getStorageStats: async () => {
+    return ipcRenderer.invoke('get-storage-stats');
+  },
+
+  // Set the maximum number of sessions to keep
+  setMaxSessions: async (maxSessions) => {
+    return ipcRenderer.invoke('set-max-sessions', maxSessions);
+  },
+
+  // Storage location selection methods
+  selectStoragePath: async () => {
+    return ipcRenderer.invoke('select-storage-path');
+  },
+
+  getStoragePath: async () => {
+    return ipcRenderer.invoke('get-storage-path');
+  },
+
+  // Analyze the latest session via main process
+  analyzeSession: async () => {
+    return ipcRenderer.invoke('analyze-session');
   }
 });
 
