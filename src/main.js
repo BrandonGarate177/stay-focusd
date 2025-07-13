@@ -15,8 +15,15 @@ let userPreferences = {
   storagePath: null
 };
 
+
+
 // Path to user preferences file
 const userPrefsPath = path.join(app.getPath('userData'), 'preferences.json');
+
+
+
+const apiUrl = import.meta.env.VITE_API_URL
+
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -163,7 +170,7 @@ ipcMain.handle('analyze-session', async () => {
     const sessionId = storageService.metadata.lastSessionId;
     const session = storageService.getSession(sessionId);
     if (!session) throw new Error(`Session ${sessionId} not found`);
-    const endpoint = 'https://focusd-lamp-126402297095.us-west1.run.app/analyze';
+    const endpoint = apiUrl + '/analyze';
     const parsedUrl = new URL(endpoint);
     const dataString = JSON.stringify(session);
     const protocol = parsedUrl.protocol === 'https:' ? https : http;

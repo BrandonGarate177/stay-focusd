@@ -1,12 +1,13 @@
 {
   "name": "stay-focusd",
+  "type": "module",
   "version": "1.0.0",
   "main": "src/main.js",
   "scripts": {
-    "dev": "vite --config src/renderer/vite.config.ts",
+    "dev": "vite --config vite.config.ts",
     "electron": "electron .",
     "start": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
-    "build": "vite build --config src/renderer/vite.config.ts"
+    "build": "vite build --config vite.config.ts"
   },
   "keywords": [],
   "author": "",

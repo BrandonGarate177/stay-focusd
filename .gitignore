@@ -3,6 +3,4 @@ node_modules
 dist
 build
 out
-src/renderer/config.ts
-src/renderer/vite.config.ts
-vite.config.ts
+
