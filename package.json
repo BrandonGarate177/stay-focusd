@@ -1,6 +1,5 @@
 {
   "name": "stay-focusd",
-  "type": "module",
   "version": "1.0.0",
   "main": "src/main.js",
   "scripts": {
@@ -25,6 +24,7 @@
   },
   "dependencies": {
     "@types/lunr": "^2.3.7",
+    "dotenv": "^17.2.0",
     "lunr": "^2.3.9",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",

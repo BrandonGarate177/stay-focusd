@@ -1,11 +1,14 @@
+require('dotenv').config();
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const { URL } = require('url');
-// Import StorageService from JavaScript file
 const { StorageService } = require('./main/storage/StorageService.js');
+
+
+// __dirname is available in CommonJS
 
 const isDev = !app.isPackaged;
 // Initialize storage service
@@ -21,8 +24,8 @@ let userPreferences = {
 const userPrefsPath = path.join(app.getPath('userData'), 'preferences.json');
 
 
-
-const apiUrl = import.meta.env.VITE_API_URL
+// Load API URL from environment
+const apiUrl = process.env.VITE_API_URL || ''
 
 
 function createWindow() {
