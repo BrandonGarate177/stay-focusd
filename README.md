@@ -33,11 +33,7 @@ The app uses a custom [Machine Learning backend](https://github.com/BrandonGarat
 
 ## Screenshots
 
-Example:
-```
-![Dashboard Screenshot](./screenshots/dashboard.png)
-![Session Analysis](./screenshots/analysis.png)
-```
+
 
 ---
 
