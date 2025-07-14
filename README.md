@@ -1,85 +1,74 @@
 # Stay FocuSD
 
-An intelligent productivity application that uses computer vision to monitor user attention and help maintain focus during work or study sessions.
+**Stay FocuSD** is a cross-platform productivity and study companion desktop app. It combines a **Pomodoro Timer** with **AI-powered attention tracking** to help you stay focused, analyze your study habits, and build better concentration over time.
 
-## Available for MacOS & Windows
-
-### [Download Application](Portfolio website link)
+The app uses a custom [Machine Learning backend](https://github.com/BrandonGarate177/FocuSD_Lamp) to detect when you're paying attention. So you can stay FocuSD, not just busy.
 
 ---
 
-## Overview
+## Features
 
-Stay FocuSD is a desktop application that uses your webcam to analyze your attention status in real-time. The application employs computer vision and machine learning algorithms to determine if you are focused ("LOCKED IN") or distracted ("SLUMPED"), providing visual feedback to help you maintain productivity.
+- **Webcam Attention Tracking**  
+  Monitors your focus levels using real-time webcam input.
 
-## Key Features
+- **Real-Time Feedback**  
+  Instantly shows your attention status and alerts you when you’re distracted.
 
-- **Real-time Attention Monitoring**: Uses your webcam to analyze facial expressions and body posture to detect focus levels.
-- **Privacy Controls**: Easily toggle webcam visibility and retain control over your privacy.
-- **Visual Feedback**: Clear status indicators show whether you're "LOCKED IN" or "SLUMPED".
-- **Cross-Platform**: Works on both MacOS and Windows.
+- **Session Analytics**  
+  View session metrics like total time, attention ratio, distraction count, and more.
 
-## Technologies Used
+- **Study Habits Tracker**  
+  Visual breakdown of your focus patterns across time.
 
-- **Frontend**: React with TypeScript
-- **Desktop Application Framework**: Electron
-- **Backend**: LAMP Stack (Linux, Apache, MySQL, PHP)
-  - Backend repository: [https://github.com/BrandonGarate177/FocuSD_Lamp](https://github.com/BrandonGarate177/FocuSD_Lamp)
+- **Customizable Storage**  
+  Choose where session data is stored locally.
+
+- **Break Reminders**  
+  Receive reminders to take breaks using Pomodoro cycles.
+
+- **Electron Desktop App**  
+  Runs smoothly on Windows, macOS, and Linux.
+
+---
+
+## Screenshots
+
+Example:
+```
+![Dashboard Screenshot](./screenshots/dashboard.png)
+![Session Analysis](./screenshots/analysis.png)
+```
+
+---
 
 ## How It Works
 
-1. The application captures periodic frames from your webcam (default interval: 5 seconds).
-2. These images are securely sent to the backend server for processing.
-3. Computer vision algorithms analyze your posture and facial expressions to determine attention level.
-4. The application displays your current attention status ("LOCKED IN" or "SLUMPED").
+- **Attention Detection**  
+  Your webcam feed is analyzed using a [custom ML backend](https://github.com/BrandonGarate177/FocuSD_Lamp) to determine if you're paying attention.
 
-## Installation
+- **Session Tracking**  
+  Every session logs your focused and distracted moments, which are then analyzed for patterns.
 
-### Prerequisites
-- Node.js and npm
+- **Live Feedback & Alerts**  
+  A dynamic UI notifies you in real time if your attention slips, and suggests when to take breaks.
 
-### Development Setup
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd stay-focusd
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm start
-   ```
-
-### Building for Production
-To create a distributable version of the application:
-```bash
-npm run build
-```
-
-## Privacy and Security
-
-- All image processing is done securely.
-- You can toggle the webcam feed visibility at any time.
-- Images are not stored permanently. They're deleted when Model is done.
-- The application requires webcam permissions to function.
-
-## Requirements
-
-- Webcam
-- Internet connection (for API communication)
-- MacOS or Windows operating system
+- **Data Storage**  
+  All focus sessions are stored locally. You can customize where data is saved for better control and privacy.
 
 ---
 
-## Backend Integration
+## Tech Stack
 
-This application works in conjunction with a LAMP stack backend that handles the image processing and machine learning components. The backend code is available in a separate repository at [https://github.com/BrandonGarate177/FocuSD_Lamp](https://github.com/BrandonGarate177/FocuSD_Lamp).
+- **Frontend**: React, TypeScript, Vite  
+- **Desktop Shell**: Electron  
+- **State Management**: React Hooks  
+- **Webcam Integration**: Browser APIs  
+- **Data Visualization**: Recharts  
+- **Styling**: CSS Modules
 
 ---
 
-Created by Brandon Garate
+## Contributing
+
+Pull requests are welcome.  
+For major changes, please open an issue first to discuss your ideas or proposed features.
