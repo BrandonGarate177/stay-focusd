@@ -24,8 +24,9 @@ let userPreferences = {
 const userPrefsPath = path.join(app.getPath('userData'), 'preferences.json');
 
 
-// Load API URL from environment
-const apiUrl = process.env.VITE_API_URL || ''
+// Load API URLs from environment
+const uploadUrl = process.env.VITE_UPLOAD_URL || '';
+const analyzeUrl = process.env.VITE_ANALYZE_URL || '';
 
 
 function createWindow() {
@@ -48,9 +49,23 @@ function createWindow() {
 
 // Handle image upload from the renderer process
 ipcMain.handle('upload-image', async (event, { buffer, endpoint }) => {
+  let fullEndpoint;
+  if (endpoint) {
+    if (/^https?:\/\//.test(endpoint)) {
+      // Absolute URL provided
+      fullEndpoint = endpoint;
+    } else {
+      // Relative path provided, append to base URL (from uploadUrl)
+      const base = uploadUrl.replace(/\/upload$/, '');
+      fullEndpoint = base.replace(/\/$/, '') + (endpoint.startsWith('/') ? endpoint : '/' + endpoint);
+    }
+  } else {
+    // No endpoint provided, use uploadUrl as full endpoint
+    fullEndpoint = uploadUrl;
+  }
   return new Promise((resolve, reject) => {
     try {
-      const parsedUrl = new URL(endpoint);
+      const parsedUrl = new URL(fullEndpoint);
       const protocol = parsedUrl.protocol === 'https:' ? https : http;
 
       // Write buffer to a temporary file
@@ -91,7 +106,7 @@ ipcMain.handle('upload-image', async (event, { buffer, endpoint }) => {
         }
       };
 
-      console.log(`Making request to ${endpoint}`);
+      console.log(`Making request to ${fullEndpoint}`);
       console.log(`Headers: ${JSON.stringify(options.headers)}`);
 
       const req = protocol.request(options, (res) => {
@@ -112,12 +127,18 @@ ipcMain.handle('upload-image', async (event, { buffer, endpoint }) => {
             if (err) console.error('Error deleting temp file:', err);
           });
 
-          try {
-            const jsonResponse = JSON.parse(data);
-            resolve(jsonResponse);
-          } catch (error) {
-            console.error('Failed to parse response:', error);
-            reject({ error: 'Failed to parse response', details: error.message, rawResponse: data });
+          // Only parse as JSON if status is 2xx and content-type is application/json
+          const contentType = res.headers['content-type'] || '';
+          if (res.statusCode >= 200 && res.statusCode < 300 && contentType.includes('application/json')) {
+            try {
+              const jsonResponse = JSON.parse(data);
+              resolve(jsonResponse);
+            } catch (error) {
+              console.error('Failed to parse JSON response:', error);
+              resolve({ error: 'Failed to parse JSON response', details: error.message, statusCode: res.statusCode, rawResponse: data });
+            }
+          } else {
+            resolve({ error: 'Unexpected response', statusCode: res.statusCode, contentType, rawResponse: data });
           }
         });
       });
@@ -173,7 +194,11 @@ ipcMain.handle('analyze-session', async () => {
     const sessionId = storageService.metadata.lastSessionId;
     const session = storageService.getSession(sessionId);
     if (!session) throw new Error(`Session ${sessionId} not found`);
-    const endpoint = apiUrl + '/analyze';
+    let endpoint = analyzeUrl;
+    if (!/^https?:\/\//.test(endpoint)) {
+      endpoint = analyzeUrl.replace(/\/$/, '') + (endpoint.startsWith('/') ? endpoint : '/' + endpoint);
+    }
+    console.log('Analyze-session: Attempting to call URL:', endpoint); // Print the URL being called
     const parsedUrl = new URL(endpoint);
     const dataString = JSON.stringify(session);
     const protocol = parsedUrl.protocol === 'https:' ? https : http;

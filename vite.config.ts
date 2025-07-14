@@ -13,6 +13,7 @@ export default defineConfig({
     },
     server: {
         port: 5173,
+        strictPort: true, // Ensures Vite fails if 5173 is not available
     },
     resolve: {
         alias: {

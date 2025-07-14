@@ -10,6 +10,23 @@ import CloseButton from './Components/CloseButton';
 
 const INTERVAL_OPTIONS = [5, 6, 7, 8, 9, 10];
 
+// AnalysisData type for session analysis results
+export type AnalysisData = {
+  totalDuration: number;
+  attentiveDuration: number;
+  attentionRatio: number;
+  distractionCount: number;
+  avgDistractionDuration: number;
+  timeSeries: {
+    start: number;
+    duration: number;
+    ratio: number;
+  }[];
+  startCycleSlump: boolean;
+  endCycleFatigue: boolean;
+  summary: string;
+};
+
 // Break Alert Component
 const BreakAlert: React.FC<{
   duration: number;
@@ -85,6 +102,7 @@ const App: React.FC = () => {
   const [confidence, setConfidence] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showStudyHabits, setShowStudyHabits] = useState<boolean>(false);
+  const [analysisData, setAnalysisData] = useState<AnalysisData | undefined>(undefined);
 
   // Session state
   const [isSessionActive, setIsSessionActive] = useState<boolean>(false);
@@ -275,6 +293,15 @@ const App: React.FC = () => {
     setShowBreakAlert(false);
     setAttentionStatus('...');
     setConfidence(null);
+
+    // Call analyze endpoint after session ends
+    try {
+      const analysis = await window.electronAPI.analyzeSession();
+      setAnalysisData(analysis);
+      setShowStudyHabits(true); // Optionally show tracker automatically
+    } catch (error) {
+      console.error('Error analyzing session:', error);
+    }
   };
 
   // Format time for display (mm:ss)
@@ -313,18 +340,30 @@ const App: React.FC = () => {
             />
           </div>
 
+          {isSessionActive && sessionTimer > 0 && (
+              <div className="pomodoro-cycles">
+                <span>
+                  Cycle {currentCycle} of {pomodoroSettings.cycles}
+                </span>
+              </div>
+          )}
+
+
           {/* Status row: Timer and Attention status side by side */}
           <div className="status-row">
+
+            {/* Show current pomodoro cycle above timer and attention status only when session is active and timer has started */}
+
             {/* Timer display - only when session is active */}
             {isSessionActive && (
               <div className="timer-display">
                 <div className="timer-value">{formatTime(sessionTimer)}</div>
-                <div className="timer-label">
-                  {isBreak
-                    ? 'Break Time'
-                    : `Working (${currentCycle}/${pomodoroSettings.cycles})`
-                  }
-                </div>
+                {/*<div className="timer-label">*/}
+                {/*  {isBreak*/}
+                {/*    ? 'Break Time'*/}
+                {/*    : `Working (${currentCycle}/${pomodoroSettings.cycles})`*/}
+                {/*  }*/}
+                {/*</div>*/}
               </div>
             )}
 
@@ -380,7 +419,7 @@ const App: React.FC = () => {
       {/* Study Habits Tracker Panel - new feature */}
       <div className={`study-habits-panel ${!showStudyHabits ? 'hidden' : ''}`}>
         <CloseButton onClose={() => setShowStudyHabits(false)} position="bottom-left" />
-        <StudyHabitsTracker />
+        <StudyHabitsTracker data={analysisData} />
       </div>
     </div>
   );

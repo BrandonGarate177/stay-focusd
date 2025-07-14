@@ -1,4 +1,4 @@
-const REMOTE_BASE = 'https://focusd-lamp-126402297095.us-west1.run.app';
+const REMOTE_BASE = import.meta.env.VITE_REMOTE_BASE;
 
 // In development use Vite proxy (relative paths), in production use remote endpoints
 export const config = {

@@ -45,43 +45,49 @@ const StudyHabitsTracker: React.FC<StudyHabitsTrackerProps> = ({ onClose, data }
             console.error('[StudyHabitsTracker] analyzeSession error:', error);
             setLoading(false);
           });
-      } else {
-        console.log(`[StudyHabitsTracker] POSTing analysis payload to ${config.analyzeEndpoint}`);
-        const payload = {
-          id: "2025-07-03_2007",
-          startTime: 1751573261359,
-          config: { duration: 5, breakInterval: 10, cycles: 2, goal: "Focus Session", tags: ["focus"] },
-          logs: [
-            { timestamp: 1751573269241, status: "attentive", confidence: 0.95 },
-            { timestamp: 1751573271892, status: "attentive", confidence: 0.95 },
-            { timestamp: 1751573276663, status: "not_attentive", confidence: 0.1 }
-          ],
-          endTime: 1751573278392
-        };
-        fetch(config.analyzeEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-          .then(async res => {
-            console.log(`[StudyHabitsTracker] response status:`, res.status, res.statusText);
-            if (!res.ok) {
-              const text = await res.text();
-              console.error(`[StudyHabitsTracker] response body on error:`, text);
-              throw new Error(`HTTP error ${res.status}`);
-            }
-            return res.json();
-          })
-          .then(json => {
-            console.log('[StudyHabitsTracker] analysis data:', json);
-            setAnalysis(json);
-            setLoading(false);
-          })
-          .catch(error => {
-            console.error('[StudyHabitsTracker] fetch error:', error);
-            setLoading(false);
-          });
       }
+      else{
+        console.log("Else statement hit")
+      }
+
+
+      // else {
+      //   console.log(`[StudyHabitsTracker] POSTing analysis payload to ${config.analyzeEndpoint}`);
+      //   const payload = {
+      //     id: "2025-07-03_2007",
+      //     startTime: 1751573261359,
+      //     config: { duration: 5, breakInterval: 10, cycles: 2, goal: "Focus Session", tags: ["focus"] },
+      //     logs: [
+      //       { timestamp: 1751573269241, status: "attentive", confidence: 0.95 },
+      //       { timestamp: 1751573271892, status: "attentive", confidence: 0.95 },
+      //       { timestamp: 1751573276663, status: "not_attentive", confidence: 0.1 }
+      //     ],
+      //     endTime: 1751573278392
+      //   };
+      //   fetch(config.analyzeEndpoint, {
+      //     method: 'POST',
+      //     headers: { 'Content-Type': 'application/json' },
+      //     body: JSON.stringify(payload)
+      //   })
+      //     .then(async res => {
+      //       console.log(`[StudyHabitsTracker] response status:`, res.status, res.statusText);
+      //       if (!res.ok) {
+      //         const text = await res.text();
+      //         console.error(`[StudyHabitsTracker] response body on error:`, text);
+      //         throw new Error(`HTTP error ${res.status}`);
+      //       }
+      //       return res.json();
+      //     })
+      //     .then(json => {
+      //       console.log('[StudyHabitsTracker] analysis data:', json);
+      //       setAnalysis(json);
+      //       setLoading(false);
+      //     })
+      //     .catch(error => {
+      //       console.error('[StudyHabitsTracker] fetch error:', error);
+      //       setLoading(false);
+      //     });
+      // }
     }
   }, []);
 
