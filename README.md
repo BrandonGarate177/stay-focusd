@@ -32,7 +32,11 @@ The app uses a custom [Machine Learning backend](https://github.com/BrandonGarat
 ---
 
 ## Screenshots
+<img width="784" height="624" alt="image" src="https://github.com/user-attachments/assets/65e4e1ff-0a12-47a0-8901-503d580bfd17" />
 
+<img width="797" height="627" alt="image" src="https://github.com/user-attachments/assets/62f1baa7-f3e1-44f4-9adc-8035176d7c76" />
+
+<img width="784" height="624" alt="image" src="https://github.com/user-attachments/assets/ea02b4bb-7edf-4d0c-848a-44fbf0713fcc" />
 
 
 ---
